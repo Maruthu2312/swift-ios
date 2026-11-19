@@ -1,0 +1,69 @@
+
+import SwiftUI
+
+struct Task: Identifiable {
+    let id = UUID()
+    var title: String
+    var isCompleted = false
+}
+
+struct ContentView: View {
+
+    @State private var taskName = ""
+    @State private var tasks: [Task] = []
+
+    var body: some View {
+
+        NavigationStack {
+
+            VStack(spacing: 20) {
+
+                HStack {
+
+                    TextField("Enter your task", text: $taskName)
+                        .textFieldStyle(.roundedBorder)
+
+                    Button("Add") {
+
+                        if !taskName.isEmpty {
+                            tasks.append(Task(title: taskName))
+                            taskName = ""
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+
+                List {
+
+                    ForEach($tasks) { $task in
+
+                        HStack {
+
+                            Button {
+                                task.isCompleted.toggle()
+                            } label: {
+                                Image(systemName: task.isCompleted
+                                      ? "checkmark.circle.fill"
+                                      : "circle")
+                                    .foregroundColor(.blue)
+                            }
+
+                            Text(task.title)
+                                .strikethrough(task.isCompleted)
+
+                        }
+                    }
+                    .onDelete { indexSet in
+                        tasks.remove(atOffsets: indexSet)
+                    }
+                }
+            }
+            .padding()
+            .navigationTitle("My Tasks")
+        }
+    }
+}
+
+#Preview {
+    ContentView()
+}
