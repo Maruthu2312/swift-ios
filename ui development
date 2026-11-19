@@ -1,0 +1,51 @@
+
+import SwiftUI
+
+struct ContentView: View {
+
+    var body: some View {
+
+        VStack(spacing: 20) {
+
+            // App Logo
+            Image(systemName: "person.circle.fill")
+                .font(.system(size: 80))
+                .foregroundColor(.blue)
+
+            // Heading
+            Text("Welcome")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+
+            // Description
+            Text("Learn SwiftUI Development")
+                .font(.subheadline)
+                .foregroundColor(.gray)
+
+            // Text Field
+            TextField("Enter your name", text: .constant(""))
+                .textFieldStyle(.roundedBorder)
+                .padding(.horizontal)
+
+            // Button
+            Button(action: {
+                print("Button Clicked")
+            }) {
+                Text("Get Started")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal)
+
+        }
+        .padding()
+    }
+}
+
+#Preview {
+    ContentView()
+}
