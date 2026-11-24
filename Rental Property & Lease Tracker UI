@@ -1,0 +1,650 @@
+
+import SwiftUI
+
+// MARK: - Property Model
+
+struct RentalProperty: Identifiable {
+    let id = UUID()
+    var name: String
+    var address: String
+    var tenant: String
+    var rent: Double
+    var status: String
+    var leaseEnd: String
+    var icon: String
+}
+
+// MARK: - Main Dashboard
+
+struct ContentView: View {
+
+    @State private var selectedTab = 0
+    @State private var searchText = ""
+    @State private var selectedFilter = "All"
+
+    @State private var properties = [
+        RentalProperty(
+            name: "Luxury Apartment",
+            address: "Coimbatore, Tamil Nadu",
+            tenant: "Arun Kumar",
+            rent: 15000,
+            status: "Occupied",
+            leaseEnd: "30 Dec 2026",
+            icon: "building.2.fill"
+        ),
+
+        RentalProperty(
+            name: "Family House",
+            address: "Tiruppur, Tamil Nadu",
+            tenant: "Priya",
+            rent: 12000,
+            status: "Occupied",
+            leaseEnd: "15 Jan 2027",
+            icon: "house.fill"
+        ),
+
+        RentalProperty(
+            name: "Commercial Shop",
+            address: "Chennai, Tamil Nadu",
+            tenant: "Vacant",
+            rent: 25000,
+            status: "Vacant",
+            leaseEnd: "Not applicable",
+            icon: "storefront.fill"
+        ),
+
+        RentalProperty(
+            name: "Office Space",
+            address: "Erode, Tamil Nadu",
+            tenant: "Rahul",
+            rent: 20000,
+            status: "Occupied",
+            leaseEnd: "10 Feb 2027",
+            icon: "building.fill"
+        )
+    ]
+
+    var filteredProperties: [RentalProperty] {
+        properties.filter { property in
+
+            let matchesFilter =
+                selectedFilter == "All" ||
+                property.status == selectedFilter
+
+            let matchesSearch =
+                searchText.isEmpty ||
+                property.name.localizedCaseInsensitiveContains(searchText) ||
+                property.address.localizedCaseInsensitiveContains(searchText) ||
+                property.tenant.localizedCaseInsensitiveContains(searchText)
+
+            return matchesFilter && matchesSearch
+        }
+    }
+
+    var totalIncome: Double {
+        properties
+            .filter { $0.status == "Occupied" }
+            .reduce(0) { $0 + $1.rent }
+    }
+
+    var body: some View {
+
+        TabView(selection: $selectedTab) {
+
+            dashboard
+                .tabItem {
+                    Label("Dashboard", systemImage: "square.grid.2x2.fill")
+                }
+                .tag(0)
+
+            PropertyListView(properties: $properties)
+                .tabItem {
+                    Label("Properties", systemImage: "house.fill")
+                }
+                .tag(1)
+
+            RentPaymentsView()
+                .tabItem {
+                    Label("Payments", systemImage: "creditcard.fill")
+                }
+                .tag(2)
+
+            LeaseTrackerView(properties: properties)
+                .tabItem {
+                    Label("Leases", systemImage: "doc.text.fill")
+                }
+                .tag(3)
+        }
+        .tint(Color(red: 0.15, green: 0.35, blue: 0.75))
+    }
+
+    // MARK: Dashboard Screen
+
+    var dashboard: some View {
+
+        NavigationStack {
+
+            ScrollView {
+
+                VStack(alignment: .leading, spacing: 22) {
+
+                    // Header
+
+                    HStack {
+
+                        VStack(alignment: .leading, spacing: 5) {
+
+                            Text("PROPERTY MANAGEMENT")
+                                .font(.caption)
+                                .tracking(2)
+                                .foregroundColor(.secondary)
+
+                            Text("Welcome Back 👋")
+                                .font(.title2)
+                                .bold()
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "person.crop.circle.fill")
+                            .font(.system(size: 42))
+                            .foregroundColor(.blue)
+                    }
+
+                    // Income Card
+
+                    VStack(alignment: .leading, spacing: 15) {
+
+                        Text("TOTAL MONTHLY RENT")
+                            .font(.caption)
+                            .tracking(1)
+                            .foregroundColor(.white.opacity(0.8))
+
+                        Text("₹\(Int(totalIncome))")
+                            .font(.system(size: 34, weight: .bold))
+                            .foregroundColor(.white)
+
+                        HStack {
+                            Image(systemName: "chart.line.uptrend.xyaxis")
+                            Text("From occupied properties")
+                        }
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.85))
+                    }
+                    .padding(22)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.12, green: 0.25, blue: 0.55),
+                                Color(red: 0.25, green: 0.48, blue: 0.85)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .cornerRadius(22)
+
+                    // Statistics
+
+                    HStack(spacing: 12) {
+
+                        statCard(
+                            title: "Properties",
+                            value: "\(properties.count)",
+                            icon: "building.2",
+                            color: .blue
+                        )
+
+                        statCard(
+                            title: "Occupied",
+                            value: "\(properties.filter { $0.status == "Occupied" }.count)",
+                            icon: "checkmark.circle",
+                            color: .green
+                        )
+
+                        statCard(
+                            title: "Vacant",
+                            value: "\(properties.filter { $0.status == "Vacant" }.count)",
+                            icon: "house",
+                            color: .orange
+                        )
+                    }
+
+                    // Search
+
+                    HStack {
+
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.gray)
+
+                        TextField("Search property or tenant", text: $searchText)
+                    }
+                    .padding()
+                    .background(Color.gray.opacity(0.09))
+                    .cornerRadius(14)
+
+                    // Property Section
+
+                    HStack {
+
+                        Text("My Properties")
+                            .font(.title3)
+                            .bold()
+
+                        Spacer()
+
+                        Menu {
+                            Button("All") { selectedFilter = "All" }
+                            Button("Occupied") { selectedFilter = "Occupied" }
+                            Button("Vacant") { selectedFilter = "Vacant" }
+                        } label: {
+                            Label(selectedFilter, systemImage: "line.3.horizontal.decrease")
+                                .font(.caption)
+                        }
+                    }
+
+                    ForEach(filteredProperties) { property in
+
+                        NavigationLink {
+                            PropertyDetailView(property: property)
+                        } label: {
+                            propertyCard(property)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if filteredProperties.isEmpty {
+                        ContentUnavailableView.search(text: searchText)
+                    }
+
+                    // Upcoming Lease
+
+                    VStack(alignment: .leading, spacing: 12) {
+
+                        Text("Lease Overview")
+                            .font(.title3)
+                            .bold()
+
+                        HStack {
+
+                            Image(systemName: "calendar.badge.clock")
+                                .font(.title2)
+                                .foregroundColor(.orange)
+
+                            VStack(alignment: .leading) {
+                                Text("Track lease expiry dates")
+                                    .fontWeight(.semibold)
+
+                                Text("Monitor tenant agreements and renewals.")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+
+                            Spacer()
+                        }
+                        .padding()
+                        .background(Color.orange.opacity(0.08))
+                        .cornerRadius(15)
+                    }
+                }
+                .padding()
+            }
+            .background(Color.gray.opacity(0.04))
+            .navigationBarHidden(true)
+        }
+    }
+
+    // MARK: Statistics Card
+
+    func statCard(
+        title: String,
+        value: String,
+        icon: String,
+        color: Color
+    ) -> some View {
+
+        VStack(alignment: .leading, spacing: 10) {
+
+            Image(systemName: icon)
+                .foregroundColor(color)
+                .font(.title3)
+
+            Text(value)
+                .font(.title2)
+                .bold()
+
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(.white)
+        .cornerRadius(15)
+    }
+
+    // MARK: Property Card
+
+    func propertyCard(_ property: RentalProperty) -> some View {
+
+        HStack(spacing: 14) {
+
+            Image(systemName: property.icon)
+                .font(.system(size: 30))
+                .foregroundColor(.blue)
+                .frame(width: 65, height: 65)
+                .background(Color.blue.opacity(0.09))
+                .cornerRadius(14)
+
+            VStack(alignment: .leading, spacing: 6) {
+
+                Text(property.name)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+
+                Text(property.address)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Text("₹\(Int(property.rent))/month")
+                    .font(.subheadline)
+                    .bold()
+                    .foregroundColor(.blue)
+            }
+
+            Spacer()
+
+            Text(property.status)
+                .font(.caption2)
+                .bold()
+                .padding(8)
+                .background(
+                    property.status == "Occupied"
+                    ? Color.green.opacity(0.12)
+                    : Color.orange.opacity(0.12)
+                )
+                .foregroundColor(
+                    property.status == "Occupied" ? .green : .orange
+                )
+                .cornerRadius(8)
+        }
+        .padding(12)
+        .background(.white)
+        .cornerRadius(17)
+        .shadow(color: .black.opacity(0.04), radius: 5)
+    }
+}
+
+// MARK: - Property List
+
+struct PropertyListView: View {
+
+    @Binding var properties: [RentalProperty]
+
+    @State private var showAddProperty = false
+
+    var body: some View {
+
+        NavigationStack {
+
+            List(properties) { property in
+
+                NavigationLink {
+                    PropertyDetailView(property: property)
+                } label: {
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(property.name)
+                            .font(.headline)
+
+                        Text(property.address)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        Text("₹\(Int(property.rent))/month")
+                            .foregroundColor(.blue)
+                    }
+                    .padding(.vertical, 5)
+                }
+            }
+            .navigationTitle("Properties")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showAddProperty = true
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                    }
+                }
+            }
+            .sheet(isPresented: $showAddProperty) {
+                AddPropertyView(properties: $properties)
+            }
+        }
+    }
+}
+
+// MARK: - Add Property
+
+struct AddPropertyView: View {
+
+    @Environment(\.dismiss) var dismiss
+    @Binding var properties: [RentalProperty]
+
+    @State private var name = ""
+    @State private var address = ""
+    @State private var tenant = ""
+    @State private var rent = ""
+
+    var body: some View {
+
+        NavigationStack {
+
+            Form {
+
+                Section("Property Information") {
+
+                    TextField("Property Name", text: $name)
+                    TextField("Address", text: $address)
+                    TextField("Tenant Name (optional)", text: $tenant)
+
+                    TextField("Monthly Rent", text: $rent)
+                        .keyboardType(.numberPad)
+                }
+
+                Button("Save Property") {
+
+                    guard !name.isEmpty,
+                          !address.isEmpty,
+                          let amount = Double(rent),
+                          amount > 0 else {
+                        return
+                    }
+
+                    properties.append(
+                        RentalProperty(
+                            name: name,
+                            address: address,
+                            tenant: tenant.isEmpty ? "Vacant" : tenant,
+                            rent: amount,
+                            status: tenant.isEmpty ? "Vacant" : "Occupied",
+                            leaseEnd: "Not set",
+                            icon: "house.fill"
+                        )
+                    )
+
+                    dismiss()
+                }
+                .disabled(
+                    name.isEmpty ||
+                    address.isEmpty ||
+                    Double(rent) == nil
+                )
+            }
+            .navigationTitle("Add Property")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Property Details
+
+struct PropertyDetailView: View {
+
+    let property: RentalProperty
+
+    var body: some View {
+
+        ScrollView {
+
+            VStack(alignment: .leading, spacing: 20) {
+
+                Image(systemName: property.icon)
+                    .font(.system(size: 75))
+                    .foregroundColor(.blue)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 180)
+                    .background(Color.blue.opacity(0.08))
+                    .cornerRadius(20)
+
+                Text(property.name)
+                    .font(.largeTitle)
+                    .bold()
+
+                Label(property.address, systemImage: "location")
+
+                Divider()
+
+                detailRow("Tenant", property.tenant)
+                detailRow("Monthly Rent", "₹\(Int(property.rent))")
+                detailRow("Status", property.status)
+                detailRow("Lease Ends", property.leaseEnd)
+
+                Spacer()
+            }
+            .padding()
+        }
+        .navigationTitle("Property Details")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    func detailRow(_ title: String, _ value: String) -> some View {
+
+        HStack {
+            Text(title)
+                .foregroundColor(.secondary)
+
+            Spacer()
+
+            Text(value)
+                .bold()
+        }
+    }
+}
+
+// MARK: - Rent Payments
+
+struct RentPaymentsView: View {
+
+    var body: some View {
+
+        NavigationStack {
+
+            VStack(spacing: 20) {
+
+                Image(systemName: "creditcard.fill")
+                    .font(.system(size: 55))
+                    .foregroundColor(.blue)
+
+                Text("Rent Payment Tracker")
+                    .font(.title2)
+                    .bold()
+
+                Text("Manage rent collection, payment dates and pending balances.")
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.secondary)
+
+                paymentCard("Arun Kumar", "₹15,000", "Pending")
+                paymentCard("Priya", "₹12,000", "Paid")
+                paymentCard("Rahul", "₹20,000", "Pending")
+
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("Payments")
+        }
+    }
+
+    func paymentCard(
+        _ tenant: String,
+        _ amount: String,
+        _ status: String
+    ) -> some View {
+
+        HStack {
+
+            VStack(alignment: .leading) {
+                Text(tenant).bold()
+                Text(amount).foregroundColor(.blue)
+            }
+
+            Spacer()
+
+            Text(status)
+                .font(.caption)
+                .bold()
+                .foregroundColor(status == "Paid" ? .green : .orange)
+                .padding(9)
+                .background(Color.gray.opacity(0.08))
+                .cornerRadius(10)
+        }
+        .padding()
+        .background(Color.gray.opacity(0.06))
+        .cornerRadius(15)
+    }
+}
+
+// MARK: - Lease Tracker
+
+struct LeaseTrackerView: View {
+
+    let properties: [RentalProperty]
+
+    var body: some View {
+
+        NavigationStack {
+
+            List(properties.filter { $0.status == "Occupied" }) { property in
+
+                VStack(alignment: .leading, spacing: 8) {
+
+                    Text(property.name)
+                        .font(.headline)
+
+                    Text("Tenant: \(property.tenant)")
+
+                    Label(
+                        "Lease End: \(property.leaseEnd)",
+                        systemImage: "calendar"
+                    )
+                    .font(.caption)
+                    .foregroundColor(.orange)
+                }
+                .padding(.vertical, 6)
+            }
+            .navigationTitle("Lease Tracker")
+        }
+    }
+}
+
+#Preview {
+    ContentView()
+}
