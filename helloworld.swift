@@ -1,1 +1,16 @@
-hello world
+
+import SwiftUI
+
+struct ContentView: View {
+    var body: some View {
+        Text("Hello, World!")
+            .font(.largeTitle)
+            .fontWeight(.bold)
+            .foregroundColor(.blue)
+            .padding()
+    }
+}
+
+#Preview {
+    ContentView()
+}
